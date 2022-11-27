@@ -556,8 +556,7 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	/* rlc R */
 	case 0x00:
 		DIS("rlc %s", RN[v30])
-		SF(CF, BR(v30, 7));
-		SR(v30, F((GR(v30) << 1) + GF(CF), 0));
+		SR(v30, F_C((GR(v30) << 1) + BR(v30, 7), 0));
 		return 0;
 
 	/* rrc R */
@@ -716,8 +715,7 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	/* rlc (I+D) */
 	case 0x06:
 		DIS("rlc (%s+%d)", IN[i5], d8)
-		SF(CF, BIT(RD8(IPD), 7));
-		WR8(IPD, F((RD8(IPD) << 1) + GF(CF), 0));
+		WR8(IPD, F_C((RD8(IPD) << 1) + BIT(RD8(IPD), 7), 0));
 		return 0;
 
 	/* rr (I+D) */
@@ -772,8 +770,7 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	/* rlc (I+D)->R */
 	case 0x00:
 		DIS("rlc (%s+%d->%s)", IN[i5], d8, RN[v30])
-		SF(CF, BIT(RD8(IPD), 7));
-		WR8(IPD, SR(v30, F((RD8(IPD) << 1) + GF(CF), 0)));
+		WR8(IPD, SR(v30, F_C((RD8(IPD) << 1) + BIT(RD8(IPD), 7), 0)));
 		return 0;
 
 	/* rr (I+D)->R */
@@ -1208,7 +1205,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	/* rlca */
 	case 0x07:
 		DIS("rlca")
-		R8[A] = YX_C((R8[A] << 1) + GF(CF));
+		R8[A] = YX_C((R8[A] << 1) + BIT(R8[A], 7));
 		SF(HF, 0);
 		return 0;
 
