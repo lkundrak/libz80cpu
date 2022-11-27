@@ -612,31 +612,6 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 }
 
 static int
-do_dd (struct z80 *z, enum z80_flags flags, int column)
-{
-	uint8_t op;
-
-	FETCH_OP
-
-	switch (op) {
-	/* ld ixh,ixl */
-	case 0x65:
-		DIS("ld ixh, ixl")
-		R8[IXH] = R8[IXL];
-		return 0;
-
-	/* ld ixl,ixh */
-	case 0x6c:
-		DIS("ld ixl, ixh")
-		R8[IXL] = R8[IXH];
-		return 0;
-	}
-
-	DIS("(bad op)");
-	return -1;
-}
-
-static int
 do_fd (struct z80 *z, enum z80_flags flags, int column)
 {
 	uint8_t op;
@@ -922,6 +897,29 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		return do_idd_cb (z, flags, column, op);
 	}
 
+	switch (op & 0xc7) {
+	/* ld R,(I+D) */
+	case 0x46:
+		FETCH(d8)
+		DIS("ld %s, (%s+%d)", RN[v33], IN[i5], d8)
+		SR(v33, RD8(IPD));
+		return 0;
+
+	/* <al> a,(I+D) */
+	case 0x86:
+		FETCH(d8)
+		DIS("%s a, (%s+%d)", IN[i5], ALN, d8)
+		return do_al (z, flags, column, op, RD8(IPD));
+	}
+
+	/* ld (I+D),R */
+	if ((op & 0xf8) == 0x70) {
+		FETCH(d8)
+		DIS("ld (%s+%d), %s", IN[i5], d8, RN[v30])
+		WR8(IPD, GR(v30));
+		return 0;
+	}
+
 	switch (op & 0xf7) {
 	/* inc J */
 	case 0x24:
@@ -963,27 +961,20 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		return do_al (z, flags, column, op, I5B0);
 	}
 
-	switch (op & 0xc7) {
-	/* ld R,(I+D) */
-	case 0x46:
-		FETCH(d8)
-		DIS("ld %s, (%s+%d)", RN[v33], IN[i5], d8)
-		SR(v33, RD8(IPD));
-		return 0;
+	if (op0 == 0xdd) {
+		switch (op) {
+		/* ld ixh,ixl */
+		case 0x65:
+			DIS("ld ixh, ixl")
+			R8[IXH] = R8[IXL];
+			return 0;
 
-	/* <al> a,(I+D) */
-	case 0x86:
-		FETCH(d8)
-		DIS("%s a, (%s+%d)", IN[i5], ALN, d8)
-		return do_al (z, flags, column, op, RD8(IPD));
-	}
-
-	/* ld (I+D),R */
-	if ((op & 0xf8) == 0x70) {
-		FETCH(d8)
-		DIS("ld (%s+%d), %s", IN[i5], d8, RN[v30])
-		WR8(IPD, GR(v30));
-		return 0;
+		/* ld ixl,ixh */
+		case 0x6c:
+			DIS("ld ixl, ixh")
+			R8[IXL] = R8[IXH];
+			return 0;
+		}
 	}
 
 	DIS("(bad op)");
@@ -1280,8 +1271,6 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		return do_ed (z, flags, column);
 	case 0xcb:
 		return do_cb (z, flags, column);
-	case 0xdd:
-		return do_dd (z, flags, column);
 	case 0xfd:
 		return do_fd (z, flags, column);
 	}
