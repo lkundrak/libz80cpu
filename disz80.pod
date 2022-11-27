@@ -1,0 +1,47 @@
+=head1 NAME
+
+disz80 - Disassemble programs for the Z80 processor
+
+=head1 SYNOPSIS
+
+=over 4
+
+=item B<disz80> [<I<program.bin>>]
+
+=back
+
+=head1 DESCRIPTION
+
+B<disz80> translates the binary dumps of Z80 programs into a
+pretty textural format. Yeah, pretty.
+
+It serves as an example of how to use I<libz80>. As such, it
+aims to be simple and therefore doesn't do anything particularly
+clever (such as generating symbolic labels for jump targets)
+nor does it provide any means to configure and customize the
+output.
+
+=head1 BUGS
+
+Would you expect any in a C program that parses complex data and
+was mostly written under influence?
+
+=head1 AUTHORS
+
+=over
+
+=item * Lubomir Rintel <L<lkundrak@v3.sk>>
+
+=back
+
+Nobody else helped me.
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 2 of the License, or (at your
+option) any later version.
+
+The source code repository can be obtained from
+L<https://github.com/lkundrak/libz80>. Bug fixes and feature
+ehancements licensed under same conditions as libz80 are welcome
+via GIT pull requests.

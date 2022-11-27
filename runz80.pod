@@ -1,0 +1,153 @@
+=head1 NAME
+
+runz80 - Run program for the Z80 processor
+
+=head1 SYNOPSIS
+
+=over 4
+
+=item B<runz80> [<I<program.bin>>]
+
+=back
+
+=head1 DESCRIPTION
+
+B<runz80> is a very rudimentary Z80 system emulator. It serves as an
+example and testbed for I<libz80>. Its capabilities are limited to loading
+raw or CP/M com programs, serial I/O, terminating itself and leaving an
+execution trace log.
+
+If the loaded program's file name ends in I<.com>, the program is treated
+as a CP/M program. Minimal BDOS is mapped, just enough to be able to run
+YAZE test programs.
+
+UART is emulated to provide basic serial I/O. CP/M programs can also use
+system calls 2 and 9.
+
+Emulation stops upon encountering a I<halt> instruction or error.
+
+Verbose output is controlled with I<DEBUG_Z80> and I<DEBUG_IO>
+environment variables.
+
+=head1 MEMORY MAP
+
+=over
+
+=item 0x0000
+
+COM programs terminate by jumping here. There's a HALT instruction here.
+
+Raw programs are copied here too, for Altos 586 IOP compatibility.
+The IOP has a 8K ROM mapped at this address.
+
+=item 0x0005
+
+COM programs have a BDOS system call handler for console I/O here.
+
+=item 0x0100
+
+COM programs are loaded here.
+
+=item 0xf000
+
+Raw programs are loaded here (and also copied to 0x0000).
+
+Good for I<Z80SerialMonitor> built with I<CONSTANTS-F000-E0.asm> configuration.
+
+=back
+
+=head1 I/O MAP
+
+=over
+
+=item 0x20 -- 0x24
+
+CTC timer. Present at this address on Altos 586 IOP, all I/O ignored.
+
+
+=item 0x2c -- 0x2d
+
+SIO serial port. Present at this address on Altos 586 IOP.
+
+
+=item 0xe0 -- 0xe3
+
+DART serial port.
+
+Good for I<Z80SerialMonitor> built with I<CONSTANTS-F000-E0.asm> configuration.
+
+=back
+
+
+=head1 BUGS
+
+Some instructions are probably wrong.
+
+Interrupts are not implemented.
+
+No R800 or 8080 support.
+
+It is slow and ugly, just like you.
+
+=head1 ENVIRONMENT
+
+=over
+
+=item I<DEBUG_Z80>
+
+Causes execution trace to be sent to stderr when set to any value.
+
+=item I<DEBUG_IO>
+
+Causes I/O trace to be writen to stderr when set to any value.
+
+=back
+
+=head1 EXAMPLES
+
+=over
+
+=item C<< runz80 Z80SerialMonitor/Z80Monitor.bin >>
+
+Run the serial monitor.
+
+=item C<< DEBUG_Z80=1 runz80 yaze/test/prelim.com 2>exec.log >>
+
+Run the quick test suite, preserve the execution trace.
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item L<https://github.com/electrickery/Z80SerialMonitor>
+
+A lovely Z80 serial monitor that works with this emulator.
+
+=item L<https://github.com/begoon/yaze>
+
+Another Z80 emulator. Faster, nicer, actually correct. Contains a test suite
+that can be run with this emulator.
+
+=back
+
+=head1 AUTHORS
+
+=over
+
+=item * Lubomir Rintel <L<lkundrak@v3.sk>>
+
+=back
+
+Nobody else helped me.
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 2 of the License, or (at your
+option) any later version.
+
+The source code repository can be obtained from
+L<https://github.com/lkundrak/libz80>. Bug fixes and feature
+ehancements licensed under same conditions as libz80 are welcome
+via GIT pull requests.
