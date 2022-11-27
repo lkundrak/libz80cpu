@@ -76,6 +76,8 @@ struct z80 {
 };
 
 int z80_insn (struct z80 *z, enum z80_flags flags);
+void z80_nmi (struct z80 *z);
+
 #ifndef Z80_NO_PRINT
 void z80_dump (struct z80 *z);
 #endif

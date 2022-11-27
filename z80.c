@@ -1413,3 +1413,13 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	DIS("(bad op)");
 	return -1;
 }
+
+void
+z80_nmi (struct z80 *z)
+{
+	z->iff2 = z->iff1;
+	z->iff1 = 0;
+	R16[SP] -= 2;
+	WR16(R16[SP], R16[PC])
+	R16[PC] = 0x0066;
+}
