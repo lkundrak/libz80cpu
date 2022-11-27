@@ -286,7 +286,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 
 	FETCH_OP
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* ld i,a */
 	case 0x47:
 		DIS("ld i, a")
@@ -619,7 +619,7 @@ do_dd (struct z80 *z, enum z80_flags flags, int column)
 
 	FETCH_OP
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* ld ixh,ixl */
 	case 0x65:
 		DIS("ld ixh, ixl")
@@ -644,7 +644,7 @@ do_fd (struct z80 *z, enum z80_flags flags, int column)
 
 	FETCH_OP
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* ld iyh,iyl */
 	case 0x65:
 		DIS("ld iyh, iyl")
@@ -706,7 +706,7 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		return 0;
 	}
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* rl (I+D) */
 	case 0x16:
 		DIS("rl (%s+%d)", IN[i5], d8)
@@ -831,7 +831,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 
 	FETCH_OP
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* ld I,A */
 	case 0x21:
 		FETCH16(v16)
@@ -1006,7 +1006,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 
 	FETCH_OP
 
-	switch (op & 0xff) {
+	switch (op) {
 	/* nop */
 	case 0x00:
 		DIS("nop")
@@ -1278,7 +1278,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	if ((op & 0xdf) == 0xdd) {
 		return do_idd (z, flags, column, op);
 	}
-	switch (op & 0xff) {
+	switch (op) {
 	case 0xed:
 		return do_ed (z, flags, column);
 	case 0xcb:
