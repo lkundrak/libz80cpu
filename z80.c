@@ -25,10 +25,12 @@
 #ifdef Z80_NO_PRINT
 #define PRINT_DATA 0
 #define PRINT_ADDR 0
+#define PRINT_REGS 0
 #define PRINT_INSN 0
 #else
 #define PRINT_DATA (flags & Z80_PRINT_DATA)
 #define PRINT_ADDR (flags & Z80_PRINT_ADDR)
+#define PRINT_REGS (flags & Z80_PRINT_REGS)
 #define PRINT_INSN (flags & Z80_PRINT_INSN)
 #endif
 
@@ -210,26 +212,36 @@ print_insn (enum z80_flags flags, int column, const char *fmt, ...)
 }
 
 #ifndef Z80_NO_PRINT
+static void
+print_regs (struct z80 *z, FILE *prto, const char sep)
+{
+	fprintf(prto, "pc=%04x sp=%04x%c", R16[PC], R16[SP], sep);
+	fprintf(prto, "af=%04x bc=%04x de=%04x hl=%04x%c",
+		R16[AF], R16[BC], R16[DE], R16[HL], sep);
+	fprintf(prto, "af'=%04x bc'=%04x de'=%04x hl'=%04x%c",
+		R16[AF_], R16[BC_], R16[DE_], R16[HL_], sep);
+	fprintf(prto, "ix=%04x iy=%04x ir=%04x%c",
+		R16[IX], R16[IY], R16[IR], sep);
+	fprintf(prto, "im=%d iff1=%d iff2=%d%c",
+		z->im, z->iff1, z->iff2, sep);
+
+	putc('[', prto);
+	putc(GF(SF) ? 'S' : 's', prto);
+	putc(GF(ZF) ? 'Z' : 'z', prto);
+	putc(GF(YF) ? 'Y' : 'y', prto);
+	putc(GF(HF) ? 'H' : 'h', prto);
+	putc(GF(XF) ? 'X' : 'x', prto);
+	putc(GF(PF) ? 'P' : 'p', prto);
+	putc(GF(NF) ? 'N' : 'n', prto);
+	putc(GF(CF) ? 'C' : 'c', prto);
+	putc(']', prto);
+	putc(' ', prto);
+}
+
 void
 z80_dump (struct z80 *z)
 {
-	fprintf(stderr, "af=%04x af'=%04x ix=%04x sp=%04x\n",
-		R16[AF], R16[AF_], R16[IX], R16[SP]);
-	fprintf(stderr, "bc=%04x bc'=%04x iy=%04x pc=%04x\n",
-		R16[BC], R16[BC_], R16[IY], R16[PC]);
-	fprintf(stderr, "de=%04x de'=%04x iff1=%d  ir=%04x\n",
-		R16[DE], R16[DE_], z->iff1, R16[IR]);
-	fprintf(stderr, "hl=%04x hl'=%04x iff2=%d  im=%d  ",
-		R16[HL], R16[HL_], z->iff2, z->im);
-	putc(GF(SF) ? 'S' : 's', stderr);
-	putc(GF(ZF) ? 'Z' : 'z', stderr);
-	putc(GF(YF) ? 'Y' : 'y', stderr);
-	putc(GF(HF) ? 'H' : 'h', stderr);
-	putc(GF(XF) ? 'X' : 'x', stderr);
-	putc(GF(PF) ? 'P' : 'p', stderr);
-	putc(GF(NF) ? 'N' : 'n', stderr);
-	putc(GF(CF) ? 'C' : 'c', stderr);
-	putc('\n', stderr);
+	print_regs (z, stderr, '\n');
 }
 #endif
 
@@ -1033,6 +1045,9 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	uint8_t n8, op;
 	uint32_t tmp;
 	int8_t d8;
+
+	if (PRINT_REGS)
+		print_regs (z, PRTO, ' ');
 
 	if (PRINT_ADDR)
 		fprintf (PRTO, "%04x: ", R16[PC]);

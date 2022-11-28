@@ -22,12 +22,13 @@
 
 enum z80_flags {
 #ifndef Z80_NO_PRINT
-        Z80_PRINT_ADDR  = 0x02,
-        Z80_PRINT_DATA  = 0x04,
-        Z80_PRINT_INSN  = 0x08,
+	Z80_PRINT_ADDR	= 0x01,
+	Z80_PRINT_DATA	= 0x02,
+	Z80_PRINT_REGS	= 0x04,
+	Z80_PRINT_INSN	= 0x08,
 #endif
 #ifndef Z80_NO_EXEC
-        Z80_EXEC        = 0x10,
+	Z80_EXEC	= 0x10,
 #endif
 };
 
