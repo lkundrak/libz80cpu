@@ -195,7 +195,6 @@ main (int argc, char *argv[])
 	enum z80_flags flags = Z80_EXEC;
 	struct z80 z = { 0, };
 	uint8_t *p;
-	int i = 0;
 	int fd;
 	int br;
 
@@ -296,20 +295,14 @@ main (int argc, char *argv[])
 	debug_z80 = !!getenv("DEBUG_Z80");
 
 	if (debug_z80) {
-		flags |= Z80_PRINT_ADDR;
+		flags |= Z80_PRINT_REGS;
 		flags |= Z80_PRINT_DATA;
 		flags |= Z80_PRINT_INSN;
 	}
 
 	while (!stopsim) {
-		if (debug_z80)
-			fprintf (stderr, "=== %d ===\n", i++);
 		if (z80_insn (&z, flags))
 			stopsim = 1;
-		if (debug_z80) {
-			z80_dump (&z);
-			putc ('\n', stderr);
-		}
 	}
 
 	cleantty();
