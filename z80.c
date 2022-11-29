@@ -1156,16 +1156,14 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	case 0x22:
 		FETCH16(tmp)
 		DIS("ld (0x%04x), hl", tmp)
-		WR8(tmp, R8[L]);
-		WR8(tmp+1, R8[H]);
+		WR16(tmp, R16[HL]);
 		return 0;
 
 	/* ld hl,(A) */
 	case 0x2a:
 		FETCH16(tmp)
 		DIS("ld hl, (0x%04x)", tmp)
-		R8[L] = RD8(tmp);
-		R8[H] = RD8(tmp+1);
+		R16[HL] = RD16(tmp);
 		return 0;
 
 	/* ld (A),a */
