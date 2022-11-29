@@ -319,7 +319,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		v16 = RD8(R16[HL]);
 		WR8(R16[HL], (v16 >> 4) + ((R8[A] & 0x0f) << 4));
 		R8[A] = F((R8[A] & 0xf0) + (v16 & 0x0f), 0);
-		return 3;
+		return 0;
 
 	/* rld */
 	case 0x6f:
@@ -327,7 +327,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		v16 = (RD8(R16[HL]) << 4) + (R8[A] & 0x0f);
 		WR8(R16[HL], v16);
 		R8[A] = F((R8[A] & 0xf0) + (v16 >> 8), 0);
-		return 3;
+		return 0;
 
 	/* in f,(c) */
 	case 0x70:
