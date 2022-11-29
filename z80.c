@@ -485,9 +485,9 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* neg */
 	case 0x44:
 		DIS("neg")
-		R8[A] = ADD_SUB_C(0, R8[A], 1);
+		R8[A] = ADD_SUB_C(0, (uint8_t)R8[A], 1);
 		SF(PF, (uint8_t)R8[A] == 0x80);
-		return 10;
+		return 0;
 
 	/* in R,(c) */
 	case 0x40:
