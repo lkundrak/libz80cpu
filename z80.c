@@ -151,6 +151,8 @@ static const enum z80_reg8 JI[] = { IXH, IXL, IYH, IYL };
 static const char *JN[] = { "ixh", "ixl", "iyh", "iyl" };
 #define i5b0	((i5 << 1) | (op & 0x01))
 #define I5B0	R8[JI[i5b0]]
+#define i5b3	((i5 << 1) | ((op >> 3) & 1))
+#define I5B3	R8[JI[i5b3]]
 
 #define v33	((op >> 3) & 0x07)
 #define v30	(op & 0x07)
@@ -925,14 +927,14 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	switch (op & 0xf7) {
 	/* inc J */
 	case 0x24:
-		DIS("inc %s", JN[i5b0])
-		I5B0 = ADD_SUB(I5B0, 1, 0);
+		DIS("inc %s", JN[i5b3])
+		I5B3 = ADD_SUB(I5B3, 1, 0);
 		return 0;
 
 	/* dec J */
 	case 0x25:
-		DIS("dec %s", JN[i5b0])
-		I5B0 = ADD_SUB(I5B0, 1, 1);
+		DIS("dec %s", JN[i5b3])
+		I5B3 = ADD_SUB(I5B3, 1, 1);
 		return 0;
 	}
 
@@ -945,8 +947,8 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 
 	/* ld J,R */
 	if ((op & 0xf0) == 0x60) {
-		DIS("ld %s, %s", JN[i5b0], RN[v30])
-		I5B0 = GR(v30);
+		DIS("ld %s, %s", JN[i5b3], RN[v30])
+		I5B3 = GR(v30);
 		return 0;
 	}
 
