@@ -225,12 +225,14 @@ z80_dump (struct z80 *z)
  */
 
 static int
-do_al (struct z80 *z, enum z80_flags flags, int column, uint8_t op, uint8_t b)
+do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 {
+	uint8_t a = R8[A];
+
 	/* add a,X */
 	switch (op & 0x38) {
 	case 0x00:
-		R8[A] = ADD_SUB_C(R8[A], b, 0);
+		R8[A] = ADD_SUB_C(a, b, 0);
 		break;
 
 	/* adc a,X */
@@ -240,7 +242,7 @@ do_al (struct z80 *z, enum z80_flags flags, int column, uint8_t op, uint8_t b)
 
 	/* sub a,X */
 	case 0x10:
-		R8[A] = ADD_SUB_C(R8[A],  b, 1);
+		R8[A] = ADD_SUB_C(a, b, 1);
 		break;
 
 	/* sbc a,X */
@@ -250,25 +252,25 @@ do_al (struct z80 *z, enum z80_flags flags, int column, uint8_t op, uint8_t b)
 
 	/* and X */
 	case 0x20:
-		R8[A] = F_C(R8[A] & b, 1);
+		R8[A] = F_C(a & b, 1);
 		SF(CF, 0);
 		break;
 
 	/* xor X */
 	case 0x28:
-		R8[A] = F_C(R8[A] ^ b, 0);
+		R8[A] = F_C(a ^ b, 0);
 		SF(CF, 0);
 		break;
 
 	/* or X */
 	case 0x30:
-		R8[A] = F_C(R8[A] | b, 0);
+		R8[A] = F_C(a | b, 0);
 		SF(CF, 0);
 		break;
 
 	/* cp X */
 	case 0x38:
-		ADD_SUB_C(R8[A], b, 1);
+		ADD_SUB_C(a, b, 1);
 		YX(b);
 		break;
 	}
