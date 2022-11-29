@@ -305,15 +305,23 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* ld a,i */
 	case 0x57:
 		DIS("ld a, i")
-		R8[A] = F_C(R8[I], 0);
+		R8[A] = R8[I];
+		SF(SF, !!(R8[A] & 0x80));
+		SF(ZF, !(R8[A] & 0xff));
+		SF(HF, 0);
 		SF(PF, z->iff2);
+		SF(NF, 0);
 		return 0;
 
 	/* ld a,r */
 	case 0x5f:
 		DIS("ld a, r")
-		R8[A] = F_C(R8[R], 0);
+		R8[A] = R8[R];
+		SF(SF, !!(R8[A] & 0x80));
+		SF(ZF, !(R8[A] & 0xff));
+		SF(HF, 0);
 		SF(PF, z->iff2);
+		SF(NF, 0);
 		return 0;
 
 	/* rrd */
