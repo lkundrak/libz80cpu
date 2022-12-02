@@ -281,6 +281,19 @@ do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 static const char *aln[] = { "add", "adc", "sub", "sbc", "and", "xor", "or", "cp" };
 #define ALN aln[(op >> 3) & 7]
 
+static void
+iof (struct z80 *z, uint8_t a)
+{
+	SF(HF, (a + ((R8[C] - 1) & 0xff)) > 0xff);
+	//SF(PF, P8((a + ((R8[C] - 1) & 0xff)) & 0x07) ^ R8[B]); // no neviem
+	//YX(a); // no neviem
+	SF(NF, BIT(a, 7)); // no neviem
+	SF(CF, GF(HF));
+	SF(ZF, --R8[B] == 0x00);
+	//SF(SF, R8[B] & 0x80); // no neviem
+}
+#define IOF(a) iof(z,a)
+
 static int
 do_ed (struct z80 *z, enum z80_flags flags, int column)
 {
@@ -372,25 +385,19 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* ind/indr */
 	case 0xaa:
 		DIS(REP ? "indr" : "ind")
-		WR8(R16[HL], z->in(z, R8[C]));
-		F_C(R8[B]--, 0);
-		SF(HF, (RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) > 0xff);
-		SF(PF, P8((RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) & 0x07) ^ R8[B]);
-		SF(NF, BIT(RD8(R16[HL]), 7));
-		SF(CF, GF(HF));
+		tmp = z->in(z, R8[C]);
+		WR8(R16[HL], tmp);
+		IOF(tmp);
 		R16[HL]--;
 		if (REP && R8[B]) R16[PC] -= 2;
 		return 0;
 
 	/* ini/inir */
 	case 0xa2:
-		DIS(REP ? "indr" : "ind")
-		WR8(R16[HL], z->in(z, R8[C]));
-		F_C(R8[B]--, 0);
-		SF(HF, (RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) > 0xff);
-		SF(PF, P8((RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) & 0x07) ^ R8[B]);
-		SF(NF, BIT(RD8(R16[HL]), 7));
-		SF(CF, GF(HF));
+		DIS(REP ? "inir" : "ini")
+		tmp = z->in(z, R8[C]);
+		WR8(R16[HL], tmp);
+		IOF(tmp);
 		R16[HL]++;
 		if (REP && R8[B]) R16[PC] -= 2;
 		return 0;
@@ -420,12 +427,9 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* outd/otdr */
 	case 0xab:
 		DIS(REP ? "otdr" : "outd")
-		z->out(z, R8[C], RD8(R16[HL]));
-		F_C(R8[B]--, 0);
-		SF(HF, (RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) > 0xff);
-		SF(PF, P8((RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) & 0x07) ^ R8[B]);
-		SF(NF, BIT(RD8(R16[HL]), 7));
-		SF(CF, GF(HF));
+		tmp = RD8(R16[HL]);
+		z->out(z, R8[C], tmp); // xxx make out return int
+		IOF(tmp);
 		R16[HL]--;
 		if (REP && R8[B]) R16[PC] -= 2;
 		return 0;
@@ -433,12 +437,9 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* outi/otir */
 	case 0xa3:
 		DIS(REP ? "otir" : "outi")
-		z->out(z, R8[C], RD8(R16[HL]));
-		F_C(R8[B]--, 0);
-		SF(HF, (RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) > 0xff);
-		SF(PF, P8((RD8(R16[HL]) + ((R8[C] - 1) & 0xff)) & 0x07) ^ R8[B]);
-		SF(NF, BIT(RD8(R16[HL]), 7));
-		SF(CF, GF(HF));
+		tmp = RD8(R16[HL]);
+		z->out(z, R8[C], tmp);
+		IOF(tmp);
 		R16[HL]++;
 		if (REP && R8[B]) R16[PC] -= 2;
 		return 0;
