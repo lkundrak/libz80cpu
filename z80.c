@@ -575,7 +575,7 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	case 0x08:
 		DIS("rrc %s", RN[v30])
 		SF(CF, BR(v30, 0));
-		SR(v30, F((GR(v30) >> 1) + (GF(CF) << 7), 0));
+		SR(v30, F(((uint8_t)GR(v30) >> 1) + (GF(CF) << 7), 0));
 		return 0;
 
 	/* rl R */
@@ -587,7 +587,7 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	/* rr R */
 	case 0x18:
 		DIS("rr %s", RN[v30])
-		SR(v30, F_C((GR(v30) + (GF(CF) << 8) + (BR(v30, 0) << 9)) >> 1, 0));
+		SR(v30, F_C(((uint8_t)GR(v30) + (GF(CF) << 8) + (BR(v30, 0) << 9)) >> 1, 0));
 		return 0;
 
 	/* sla R */
@@ -615,7 +615,7 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	case 0x38:
 		DIS("srl %s", RN[v30])
 		SF(CF, BR(v30, 0));
-		SR(v30, F(GR(v30) >> 1, 0));
+		SR(v30, F((uint8_t)GR(v30) >> 1, 0));
 		return 0;
 	}
 
