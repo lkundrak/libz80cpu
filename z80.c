@@ -283,7 +283,7 @@ static const char *aln[] = { "add", "adc", "sub", "sbc", "and", "xor", "or", "cp
 static int
 do_ed (struct z80 *z, enum z80_flags flags, int column)
 {
-	uint16_t v16;
+	uint32_t tmp;
 	uint8_t op;
 
 	FETCH_OP
@@ -318,17 +318,17 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* rrd */
 	case 0x67:
 		DIS("rrd")
-		v16 = RD8(R16[HL]);
-		WR8(R16[HL], (v16 >> 4) + ((R8[A] & 0x0f) << 4));
-		R8[A] = F((R8[A] & 0xf0) + (v16 & 0x0f), 0);
+		tmp = RD8(R16[HL]);
+		WR8(R16[HL], (tmp >> 4) + ((R8[A] & 0x0f) << 4));
+		R8[A] = F((R8[A] & 0xf0) + (tmp & 0x0f), 0);
 		return 0;
 
 	/* rld */
 	case 0x6f:
 		DIS("rld")
-		v16 = (RD8(R16[HL]) << 4) + (R8[A] & 0x0f);
-		WR8(R16[HL], v16);
-		R8[A] = F((R8[A] & 0xf0) + (v16 >> 8), 0);
+		tmp = (RD8(R16[HL]) << 4) + (R8[A] & 0x0f);
+		WR8(R16[HL], tmp);
+		R8[A] = F((R8[A] & 0xf0) + (tmp >> 8), 0);
 		return 0;
 
 	/* in f,(c) */
@@ -467,17 +467,17 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* ld (A),Q */
 	case 0x43:
 		/* ld (A),hl has a better encoding. */
-		FETCH16(v16)
-		DIS("ld (0x%04x), %s", v16, QN[q24])
-		WR16(v16, Q24)
+		FETCH16(tmp)
+		DIS("ld (0x%04x), %s", tmp, QN[q24])
+		WR16(tmp, Q24)
 		return 0;
 
 	/* ld Q,(A) */
 	case 0x4b:
 		/* ld hl,(A) has a better encoding. */
-		FETCH16(v16)
-		DIS("ld %s, (0x%04x)", QN[q24], v16)
-		Q24 = RD16(v16);
+		FETCH16(tmp)
+		DIS("ld %s, (0x%04x)", QN[q24], tmp)
+		Q24 = RD16(tmp);
 		return 0;
 	}
 
@@ -800,7 +800,7 @@ static int
 do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 {
 	uint8_t op, n8;
-	uint16_t v16;
+	uint32_t tmp;
 	int8_t d8;
 
 	FETCH_OP
@@ -808,16 +808,16 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	switch (op) {
 	/* ld I,A */
 	case 0x21:
-		FETCH16(v16)
-		DIS("ld %s, 0x%04x", IN[i5], v16)
-		I5 = v16;
+		FETCH16(tmp)
+		DIS("ld %s, 0x%04x", IN[i5], tmp)
+		I5 = tmp;
 		return 0;
 
 	/* ld (A),I */
 	case 0x22:
-		FETCH16(v16)
-		DIS("ld (0x%04x), %s", v16, IN[i5])
-		WR8(v16, I5);
+		FETCH16(tmp)
+		DIS("ld (0x%04x), %s", tmp, IN[i5])
+		WR8(tmp, I5);
 		return 0;
 
 	/* inc I */
@@ -828,9 +828,9 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 
 	/* ld I,(A) */
 	case 0x2a:
-		FETCH16(v16)
-		DIS("ld %s, (0x%04x)", IN[i5], v16)
-		I5 = RD8(v16);
+		FETCH16(tmp)
+		DIS("ld %s, (0x%04x)", IN[i5], tmp)
+		I5 = RD8(tmp);
 		return 0;
 
 	/* dec I */
@@ -871,9 +871,9 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	/* ex (sp),I */
 	case 0xe3:
 		DIS("ex (sp), %s", IN[i5])
-		v16 = RD16(R16[SP]);
+		tmp = RD16(R16[SP]);
 		WR16(R16[SP], I5)
-		I5 = v16;
+		I5 = tmp;
 		return 0;
 
 	/* push I */
@@ -988,7 +988,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 {
 	int column = 0;
 	uint8_t n8, op;
-	uint16_t v16;
+	uint32_t tmp;
 	int8_t d8;
 
 	if (PRINT_ADDR)
@@ -1051,9 +1051,9 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	/* ex (sp),hl */
 	case 0xe3:
 		DIS("ex (sp), hl")
-		v16 = RD16(R16[SP]);
+		tmp = RD16(R16[SP]);
 		WR16(R16[SP], R16[HL])
-		R16[HL] = v16;
+		R16[HL] = tmp;
 		return 0;
 
 	/* jp (hl) */
@@ -1145,48 +1145,48 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 
 	/* ld (A),hl */
 	case 0x22:
-		FETCH16(v16)
-		DIS("ld (0x%04x), hl", v16)
-		WR8(v16, R8[L]);
-		WR8(v16+1, R8[H]);
+		FETCH16(tmp)
+		DIS("ld (0x%04x), hl", tmp)
+		WR8(tmp, R8[L]);
+		WR8(tmp+1, R8[H]);
 		return 0;
 
 	/* ld hl,(A) */
 	case 0x2a:
-		FETCH16(v16)
-		DIS("ld hl, (0x%04x)", v16)
-		R8[L] = RD8(v16);
-		R8[H] = RD8(v16+1);
+		FETCH16(tmp)
+		DIS("ld hl, (0x%04x)", tmp)
+		R8[L] = RD8(tmp);
+		R8[H] = RD8(tmp+1);
 		return 0;
 
 	/* ld (A),a */
 	case 0x32:
-		FETCH16(v16)
-		DIS("ld (0x%04x), a", v16)
-		WR8(v16, R8[A]);
+		FETCH16(tmp)
+		DIS("ld (0x%04x), a", tmp)
+		WR8(tmp, R8[A]);
 		return 0;
 
 	/* ld a,(A) */
 	case 0x3a:
-		FETCH16(v16)
-		DIS("ld a, (0x%04x)", v16)
-		R8[A] = RD8(v16);
+		FETCH16(tmp)
+		DIS("ld a, (0x%04x)", tmp)
+		R8[A] = RD8(tmp);
 		return 0;
 
 	/* jp A */
 	case 0xc3:
-		FETCH16(v16)
-		DIS("jp 0x%04x", v16)
-		R16[PC] = v16;
+		FETCH16(tmp)
+		DIS("jp 0x%04x", tmp)
+		R16[PC] = tmp;
 		return 0;
 
 	/* call A */
 	case 0xcd:
-		FETCH16(v16)
-		DIS("call 0x%04x", v16)
+		FETCH16(tmp)
+		DIS("call 0x%04x", tmp)
 		R16[SP] -= 2;
 		WR16(R16[SP], R16[PC])
-		R16[PC] = v16;
+		R16[PC] = tmp;
 		return 0;
 
 	/* ex af,af' */
@@ -1226,15 +1226,15 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	/* daa */
 	case 0x27:
 		DIS("daa")
-		v16 = R8[A];
+		tmp = R8[A];
 		if (GF(HF) || (R8[A] & 0x0f) > 9)
-			v16 += (GF(NF) ? -0x06 : 0x06);
+			tmp += (GF(NF) ? -0x06 : 0x06);
 		if (GF(CF) || R8[A] > 0x99)
-			v16 += (GF(NF) ? -0x60 : 0x60);
-		F(v16, BIT(R8[A], 4) ^ BIT(v16, 4));
+			tmp += (GF(NF) ? -0x60 : 0x60);
+		F(tmp, BIT(R8[A], 4) ^ BIT(tmp, 4));
 		if (R8[A] > 0x99)
 			SF(CF, 1);
-		R8[A] = v16;
+		R8[A] = tmp;
 		return 0;
 
 	/* cpl */
@@ -1356,19 +1356,19 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 
 	/* jp C,A */
 	case 0xc2:
-		FETCH16(v16)
-		DIS("jp %s, 0x%04x", CN[v33], v16)
-		if (COND) R16[PC] = v16;
+		FETCH16(tmp)
+		DIS("jp %s, 0x%04x", CN[v33], tmp)
+		if (COND) R16[PC] = tmp;
 		return 0;
 
 	/* call C,A */
 	case 0xc4:
-		FETCH16(v16)
-		DIS("call %s, 0x%04x", CN[v33], v16)
+		FETCH16(tmp)
+		DIS("call %s, 0x%04x", CN[v33], tmp)
 		if (COND) {
 			R16[SP] -= 2;
 			WR16(R16[SP], R16[PC])
-			R16[PC] = v16;
+			R16[PC] = tmp;
 		}
 		return 0;
 
@@ -1392,9 +1392,9 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 
 	/* ld Q,A */
 	if ((op & 0xcf) == 0x01) {
-		FETCH16(v16)
-		DIS("ld %s, 0x%04x", QN[q24], v16)
-		Q24 = v16;
+		FETCH16(tmp)
+		DIS("ld %s, 0x%04x", QN[q24], tmp)
+		Q24 = tmp;
 		return 0;
 	}
 
