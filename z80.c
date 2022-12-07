@@ -405,22 +405,26 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* ldd/lddr */
 	case 0xa8:
 		DIS(REP ? "lddr" : "ldd")
-		YX((RD8(R16[HL]) + R8[A]) >> 2);
-		WR8(R16[DE], RD8(R16[HL]));
-		R16[DE]--;
-		R16[HL]--;
-		R16[BC]--;
+		tmp = RD8(R16[HL]--);
+		WR8(R16[DE]--, tmp);
+		SF(YF, (tmp + R8[A]) & 0x02);
+		SF(XF, (tmp + R8[A]) & 0x08);
+		SF(HF, 0);
+		SF(NF, 0);
+		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC]) R16[PC] -= 2;
 		return 0;
 
 	/* ldi/ldir */
 	case 0xa0:
 		DIS(REP ? "ldir" : "ldi")
-		YX((RD8(R16[HL]) + R8[A]) >> 2);
-		WR8(R16[DE], RD8(R16[HL]));
-		R16[DE]++;
-		R16[HL]++;
-		R16[BC]--;
+		tmp = RD8(R16[HL]++);
+		WR8(R16[DE]++, tmp);
+		SF(YF, (tmp + R8[A]) & 0x02);
+		SF(XF, (tmp + R8[A]) & 0x08);
+		SF(HF, 0);
+		SF(NF, 0);
+		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC]) R16[PC] -= 2;
 		return 0;
 
