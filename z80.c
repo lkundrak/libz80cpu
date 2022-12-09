@@ -826,7 +826,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x22:
 		FETCH16(tmp)
 		DIS("ld (0x%04x), %s", tmp, IN[i5])
-		WR8(tmp, I5);
+		WR16(tmp, I5);
 		return 0;
 
 	/* inc I */
@@ -839,7 +839,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x2a:
 		FETCH16(tmp)
 		DIS("ld %s, (0x%04x)", IN[i5], tmp)
-		I5 = RD8(tmp);
+		I5 = RD16(tmp);
 		return 0;
 
 	/* dec I */
