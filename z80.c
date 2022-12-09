@@ -372,16 +372,21 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* cpd/cpdr */
 	case 0xa9:
 		DIS(REP ? "cpdr" : "cpd")
-		YX((F(R8[A] - RD8(R16[HL]--), 1) - GF(HF)) >> 2);
-		R16[BC]--;
-		if (REP && R16[BC] & !GF(ZF)) R16[PC] -= 2;
+		tmp = ADD_SUB(R8[A], RD8(R16[HL]--), 1);
+		SF(YF, ((tmp - GF(HF)) & 0x02));
+		SF(XF, ((tmp - GF(HF)) & 0x08));
+		SF(PF, --R16[BC] != 0);
+		if (REP && R16[BC] && !GF(ZF)) R16[PC] -= 2;
 		return 0;
 
 	/* cpi/cpir */
 	case 0xa1:
-		YX((F(R8[A] - RD8(R16[HL]++), 1) - GF(HF)) >> 2);
-		R16[BC]--;
-		if (REP && R16[BC] & !GF(ZF)) R16[PC] -= 2;
+		DIS(REP ? "cpir" : "cpi")
+		tmp = ADD_SUB(R8[A], RD8(R16[HL]++), 1);
+		SF(YF, ((tmp - GF(HF)) & 0x02));
+		SF(XF, ((tmp - GF(HF)) & 0x08));
+		SF(PF, --R16[BC] != 0);
+		if (REP && R16[BC] && !GF(ZF)) R16[PC] -= 2;
 		return 0;
 
 	/* ind/indr */
