@@ -135,6 +135,8 @@ static const enum z80_reg16 QI[] = { BC, DE, HL, SP };
 static const char *QN[] = { "bc", "de", "hl", "sp" };
 #define q24	((op >> 4) & 0x03)
 #define Q24	R16[QI[q24]]
+#define XN24	(q24 == 2 ? IN[i5] : QN[q24])
+#define X24	(q24 == 2 ? I5 : Q24 )
 
 static const enum z80_reg16 PI[] = { BC, DE, HL, AF };
 static const char *PN[] = { "bc", "de", "hl", "af" };
@@ -952,8 +954,11 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 
 	/* add I,Q */
 	if ((op & 0xcf) == 0x09) {
-		DIS("add %s, %s", IN[i5], QN[q24])
-		I5 = YX_C(I5 + Q24);
+		DIS("add %s, %s", IN[i5], XN24)
+		tmp = I5 + X24;
+		YX_C(tmp >> 8);
+		SF(HF, !!((I5 & 0xf00) > (tmp & 0xf00)));
+		I5 = tmp;
 		return 0;
 	}
 
