@@ -1270,10 +1270,11 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		tmp = R8[A];
 		if (GF(HF) || (R8[A] & 0x0f) > 9)
 			tmp += (GF(NF) ? -0x06 : 0x06);
-		if (GF(CF) || R8[A] > 0x99)
+		if (GF(CF) || (uint8_t)R8[A] > 0x99)
 			tmp += (GF(NF) ? -0x60 : 0x60);
-		F(tmp, BIT(R8[A], 4) ^ BIT(tmp, 4));
-		if (R8[A] > 0x99)
+		SZYHX(tmp, BIT(R8[A], 4) ^ BIT(tmp, 4));
+		SF(PF, P8(tmp));
+		if ((uint8_t)R8[A] > 0x99)
 			SF(CF, 1);
 		R8[A] = tmp;
 		return 0;
