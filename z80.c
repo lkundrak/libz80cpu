@@ -1269,7 +1269,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	/* scf */
 	case 0x37:
 		DIS("scf")
-		YX(R8[A] | R8[F]);
+		YX(R8[A]);
 		SF(HF, 0);
 		SF(NF, 0);
 		SF(CF, 1);
