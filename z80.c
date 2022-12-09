@@ -894,7 +894,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		return 0;
 	case 0xcb:
 		/* Extended */
-		return do_idd_cb (z, flags, column, op);
+		return do_idd_cb (z, flags, column, op0);
 	}
 
 	switch (op & 0xc7) {
