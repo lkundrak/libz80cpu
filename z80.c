@@ -471,7 +471,9 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	/* sbc hl,Q */
 	case 0x42:
 		DIS("sbc hl, %s", QN[q24])
-		R16[HL] = ADD_SUB_C(R16[HL], Q24 + GF(CF), 1);
+		R8[L] = ADD_SUB_C((uint8_t)R8[L], (Q24 & 0xff) + GF(CF), 1);
+		R8[H] = ADD_SUB_C((uint8_t)R8[H], (Q24 >> 8) + GF(CF), 1);
+		SF(ZF, R16[HL] == 0);
 		return 0;
 
 	/* adc hl,Q */
