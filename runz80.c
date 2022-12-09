@@ -61,7 +61,7 @@ out (struct z80 *z, uint8_t addr, uint8_t val)
 	case UART_BASE + 1:
 	case A586_SIO0_BASE:
 		/* Serial data. */
-		if (val == 0x0d) {
+		if (val == '\r') {
 			stopsim = 0;
 			break;
 		}
