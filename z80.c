@@ -80,8 +80,7 @@ static uint16_t
 yxc_flags(struct z80 *z, const uint16_t a)
 {
 	R8[F] &= ~(1 << HF | 1 << NF | 1 << XF | 1 << YF | 1 << CF);
-	R8[F] |= (!!(a & 0x10)) << HF
-		| (a & (1 << XF | 1 << YF));
+	R8[F] |= (a & (1 << XF | 1 << YF));
 	return cf(z, a);
 }
 #define YX_C(a) yxc_flags(z, a)
@@ -1289,7 +1288,10 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	/* add hl,Q */
 	case 0x09:
 		DIS("add hl, %s", QN[q24])
-		R16[HL] = YX_C(R16[HL] + Q24);
+		tmp = R16[HL] + Q24;
+		YX_C(tmp >> 8);
+		SF(HF, !!((R16[HL] & 0xf00) > (tmp & 0xf00)));
+		R16[HL] = tmp;
 		return 0;
 
 	/* dec Q */
