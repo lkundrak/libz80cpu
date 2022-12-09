@@ -86,37 +86,52 @@ yxc_flags(struct z80 *z, const uint16_t a)
 #define YX_C(a) yxc_flags(z, a)
 
 static uint16_t
+szyhx_flags(struct z80 *z, const uint16_t a, const uint8_t h)
+{
+	R8[F] &= ~(1 << SF  | 1 << ZF | 1 << HF);
+	R8[F] |= (!!(a & 0x080) << SF)
+		| (!(a & 0x0ff) << ZF)
+		| (h << HF);
+
+	return yx_flags (z, a);
+}
+#define SZYHX(a, h) szyhx_flags(z, a, h)
+
+static uint16_t
 p_flags(struct z80 *z, const uint16_t a, const uint8_t h)
 {
-	R8[F] &= ~(1 << SF  | 1 << ZF | 1 << HF | 1 << VF | 1 << NF);
-	R8[F] |= (!!(a & 0x800) << SF)
-		| (!(a & 0x0ff) << ZF)
-		| (h << HF)
-		| P8(a);
+	R8[F] &= ~(1 << PF | 1 << NF);
+	R8[F] |= (P8(a) << PF);
 
-	return yx_flags(z, a);
+	return szyhx_flags(z, a, h);
 }
 #define F(a,h) p_flags(z, a, h)
 #define F_C(a,h) cf(z, p_flags(z, a, h))
 
 static uint16_t
-add_sub(struct z80 *z, const uint16_t b, const uint16_t a, const bool sub)
+add_sub(struct z80 *z, const uint16_t a, const uint16_t b, const uint8_t c, const bool sub)
 {
 	uint16_t res;
+	uint8_t h, v;
 
-	res = sub ? b - a : b + a;
+	if (sub) {
+		res = a - b - c;
+		h = ((a & 0xf) < (res & 0xf)) || (c && (res & 0xf) == 0xf);
+		v = ((a & 0x80) != (b & 0x80)) && ((a & 0x80) != (res & 0x80));
+	} else {
+		res = a + b + c;
+		h = ((a & 0xf) > ((res-c) & 0xf)) || (c && (res & 0xf) == 0x0);
+		v = ((a & 0x80) == (b & 0x80)) && ((a & 0x80) != (res & 0x80));
+	}
 
-	R8[F] &= ~(1 << SF  | 1 << ZF | 1 << HF | 1 << VF | 1 << NF);
-	R8[F] |= (!!(res & 0x800) << SF)
-		| (!(res & 0x0ff) << ZF)
-		| (res & (1 << HF))
-		| ((b & 0x800) != (res & 0x800)) << VF
-		| (sub << NF);
+	R8[F] &= ~(1 << VF | 1 << NF);
+	R8[F] |= (v << VF) | (sub << NF);
 
-	return res;
+	return szyhx_flags (z, res, h);
 }
-#define ADD_SUB(b,a,n)   add_sub(z,b,a,n)
-#define ADD_SUB_C(b,a,n) cf(z, add_sub(z,b,a,n))
+#define ADD_SUB(a,b,sub)	add_sub(z,a,b,0,sub)
+#define ADD_SUB_C(a,b,sub)	cf(z, add_sub(z,a,b,0,sub))
+#define ADD_SUB_CC(a,b,sub)	cf(z, add_sub(z,a,b,GF(CF),sub))
 
 static const enum z80_reg8 RI[] = { B, C, D, E, H, L, NUM_R8, A };
 static const char *RN[] = { "b", "c", "d", "e", "h", "l", "(hl)", "a" };
@@ -240,7 +255,7 @@ do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 
 	/* adc a,X */
 	case 0x08:
-		R8[A] = ADD_SUB_C(R8[A], b + GF(CF), 0);
+		R8[A] = ADD_SUB_CC(a, b, 0);
 		break;
 
 	/* sub a,X */
@@ -250,7 +265,7 @@ do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 
 	/* sbc a,X */
 	case 0x18:
-		R8[A] = ADD_SUB_C(R8[A], b + GF(CF), 1);
+		R8[A] = ADD_SUB_CC(a, b, 1);
 		break;
 
 	/* and X */
