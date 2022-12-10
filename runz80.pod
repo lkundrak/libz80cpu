@@ -6,7 +6,7 @@ runz80 - Run program for the Z80 processor
 
 =over 4
 
-=item B<runz80> [<I<program.bin>>]
+=item B<runz80> [B<--raw>|B<--cpm>] [<I<program.bin>>]
 
 =back
 
@@ -17,17 +17,34 @@ example and testbed for I<libz80>. Its capabilities are limited to loading
 raw or CP/M com programs, serial I/O, terminating itself and leaving an
 execution trace log.
 
-If the loaded program's file name ends in I<.com>, the program is treated
-as a CP/M program. Minimal BDOS is mapped, just enough to be able to run
-YAZE test programs.
-
-UART is emulated to provide basic serial I/O. CP/M programs can also use
-system calls 2 and 9.
+UART is emulated to provide basic serial I/O.
 
 Emulation stops upon encountering a I<halt> instruction or error.
 
 Verbose output is controlled with I<DEBUG_Z80> and I<DEBUG_IO>
 environment variables.
+
+=head1 OPTIONS
+
+=over
+
+=item B<--raw>
+
+Treat the image as a raw program. Load the program at 0xf000, with a copy
+at 0x0000 (for Altos IOP compatibility). No ROM call emulation is attempted.
+
+=item B<--cpm>
+
+Treat the image as a CP/M program. Map minimal BIOS at 0x0000 and load the
+program at 0x0100.
+
+The minimal BIOS implements system calls 2 and 9. It's just enough to be
+able to run YAZE test programs.
+
+=back
+
+Without any option, the program type is guessed. Files ending with I<.com>
+are assumed to be CP/M program while everything else is treated as raw.
 
 =head1 MEMORY MAP
 

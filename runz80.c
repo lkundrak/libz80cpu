@@ -189,10 +189,23 @@ cleantty(void)
 		perror("cleantty: tcsetattr");
 }
 
+static int
+endswith (const char *str, const char *suffix)
+{
+	return (strlen(str) > 4 && strcmp(str + strlen(str) - 4, suffix) == 0);
+}
+
+enum load_type {
+	LOAD_GUESS = 0,
+	LOAD_RAW,
+	LOAD_CPM,
+};
+
 int
 main (int argc, char *argv[])
 {
 	enum z80_flags flags = Z80_EXEC;
+	enum load_type type = LOAD_GUESS;
 	struct z80 z = { 0, };
 	uint8_t *p;
 	int fd;
@@ -206,12 +219,30 @@ main (int argc, char *argv[])
 	z.r16[AF] = 0xffff;
 	z.r16[SP] = 0xffff;
 
-	if (argc != 2) {
+	if (argc == 3) {
+		if (strcmp (argv[1], "--raw") == 0) {
+			type = LOAD_RAW;
+		} else if (strcmp (argv[1], "--cpm") == 0) {
+			type = LOAD_CPM;
+		} else {
+			fprintf (stderr, "Bad argument: '%s'\n", argv[1]);
+			return 1;
+		}
+	} else if (argc != 2) {
 		fprintf(stderr, "Usage: %s <program>\n", argv[0]);
 		return 1;
 	}
 
-	if (strlen(argv[1]) > 4 && strcmp(argv[1] + strlen(argv[1]) - 4, ".com") == 0) {
+	if (type == LOAD_GUESS) {
+		if (endswith (argv[1], ".com")) {
+			type = LOAD_CPM;
+		} else {
+			type = LOAD_RAW;
+		}
+	}
+
+	switch (type) {
+	case LOAD_CPM:
 		/* Assume this is a CP/M program. These start at 0x100  */
 		z.r16[PC] = 0x0100;
 
@@ -261,15 +292,17 @@ main (int argc, char *argv[])
 		mem[0x0020] = 0x0a;
 		mem[0x0021] = 0xed; /*		out (c),a 		*/
 		mem[0x0022] = 0x79;
-		mem[0x0023] = 0xc9; /*		ret 		*/
-	} else {
+		mem[0x0023] = 0xc9; /*		ret 			*/
+		break;
+
+	default:
 		/* A raw program. */
 		z.r16[PC] = ROM_BOTTOM;
 	}
 
-	fd = open(argv[1], O_RDONLY);
+	fd = open(argv[argc-1], O_RDONLY);
 	if (fd == -1) {
-		perror(argv[1]);
+		perror(argv[argc-1]);
 		return 1;
 	}
 	p = &mem[z.r16[PC]];
@@ -283,7 +316,7 @@ main (int argc, char *argv[])
 	} while (br);
 	close (fd);
 
-	if (mem[0x0000] != 0x76) {
+	if (type == LOAD_RAW) {
 		/* If not a .com file, relocate for Altos 586 IOP compatibility. */
 		memcpy (&mem[A586_ROM_BOTTOM], &mem[ROM_BOTTOM], p - &mem[ROM_BOTTOM]);
 	}
