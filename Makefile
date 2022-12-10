@@ -26,18 +26,53 @@ disz80: z80-print.o
 	groff -Tpdf -mman $< >$@
 
 .PHONY: test
-test: prelim.com runz80
-	./runz80 prelim.com
 
-mon: Z80Monitor-586.bin runz80
-	./runz80 Z80Monitor-586.bin
+clean:
+	rm -f $(TARGETS) *.o *.pdf *.bin *.com *.zip *.out *.txt
+
+
+# Monitor
 
 Z80Monitor-586.bin:
 	wget https://raw.githubusercontent.com/lkundrak/Z80SerialMonitor-586/82b2a3ae400/$@
 
-prelim.com:
+mon: Z80Monitor-586.bin runz80
+	./runz80 --raw Z80Monitor-586.bin
+
+
+# Yaze test suite
+
+YAZETESTS = prelim sys zexall savage timex zexdoc
+
+%.txt: %.com runz80
+	./runz80 --cpm $<
+
+$(addsuffix .com,$(YAZETESTS)):
 	wget https://raw.githubusercontent.com/begoon/yaze/4424f29172/test/$@
 
-clean:
-	rm -f $(TARGETS) *.o *.pdf Z80Monitor-586.bin prelim.com
+yaze-test: $(addsuffix .txt,$(YAZETESTS))
 
+
+# z80test test suite
+
+Z80TESTS = z80ccf z80doc z80docflags
+Z80TESTS += z80flags z80full z80memptr
+#Z80TESTS += z80ccfscr
+
+z80test-1.2.zip:
+	wget https://github.com/raxoft/z80test/releases/download/v1.2/$@
+
+$(addsuffix .out,$(Z80TESTS)): z80test-1.2.zip
+	unzip -p $< z80test-1.2/$(basename $@).tap |dd bs=91 skip=1 of=$@
+
+%.txt: %.out runz80
+	./runz80 --zx $< |tee $@
+
+test: $(addsuffix .txt,$(Z80TESTS))
+
+
+# Quick smoke test
+
+smoke: runz80 prelim.com z80doc.out
+	./runz80 --cpm prelim.com
+	./runz80 --zx z80doc.out
