@@ -247,14 +247,14 @@ z80_dump (struct z80 *z)
 
 #define DIS(fmt,...) \
 	if (PRINT_INSN) print_insn(flags, column, fmt, ## __VA_ARGS__); \
-	if (EXEC == 0) return 0;
+	if (EXEC == 0) return Z80_OP_GOOD;
 
 /*
  * The basic arithmetic-logic operations on A register follow the same
  * pattern regardless of the other operand.
  */
 
-static int
+static enum z80_result
 do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 {
 	uint8_t a = R8[A];
@@ -305,7 +305,7 @@ do_al (struct z80 *z, enum z80_flags flags, int column, int8_t op, uint8_t b)
 		break;
 	}
 
-	return 0;
+	return Z80_OP_GOOD;
 }
 static const char *aln[] = { "add", "adc", "sub", "sbc", "and", "xor", "or", "cp" };
 #define ALN aln[(op >> 3) & 7]
@@ -323,7 +323,7 @@ iof (struct z80 *z, uint8_t a)
 }
 #define IOF(a) iof(z,a)
 
-static int
+static enum z80_result
 do_ed (struct z80 *z, enum z80_flags flags, int column)
 {
 	uint32_t tmp;
@@ -336,13 +336,13 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	case 0x47:
 		DIS("ld i, a")
 		R8[I] = R8[A];
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld r,a */
 	case 0x4f:
 		DIS("ld r, a")
 		R8[R] = R8[A];
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld a,i */
 	case 0x57:
@@ -353,7 +353,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(HF, 0);
 		SF(PF, z->iff2);
 		SF(NF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld a,r */
 	case 0x5f:
@@ -364,7 +364,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(HF, 0);
 		SF(PF, z->iff2);
 		SF(NF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rrd */
 	case 0x67:
@@ -372,7 +372,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		tmp = RD8(R16[HL]);
 		WR8(R16[HL], (tmp >> 4) + ((R8[A] & 0x0f) << 4));
 		R8[A] = F((R8[A] & 0xf0) + (tmp & 0x0f), 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rld */
 	case 0x6f:
@@ -380,19 +380,19 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		tmp = (RD8(R16[HL]) << 4) + (R8[A] & 0x0f);
 		WR8(R16[HL], tmp);
 		R8[A] = F((R8[A] & 0xf0) + (tmp >> 8), 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* in f,(c) */
 	case 0x70:
 		DIS("in f, (c)")
 		F(z->in(z, R8[C]), 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* out (c),0 */
 	case 0x71:
 		DIS("out (c), 0")
 		z->out(z, R8[C], 0); /* Told to vary with CPU */
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xef) {
@@ -404,7 +404,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(XF, ((tmp - GF(HF)) & 0x08));
 		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC] && !GF(ZF)) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* cpi/cpir */
 	case 0xa1:
@@ -414,7 +414,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(XF, ((tmp - GF(HF)) & 0x08));
 		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC] && !GF(ZF)) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ind/indr */
 	case 0xaa:
@@ -424,7 +424,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		IOF(tmp);
 		R16[HL]--;
 		if (REP && R8[B]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ini/inir */
 	case 0xa2:
@@ -434,7 +434,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		IOF(tmp);
 		R16[HL]++;
 		if (REP && R8[B]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ldd/lddr */
 	case 0xa8:
@@ -447,7 +447,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(NF, 0);
 		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ldi/ldir */
 	case 0xa0:
@@ -460,7 +460,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		SF(NF, 0);
 		SF(PF, --R16[BC] != 0);
 		if (REP && R16[BC]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* outd/otdr */
 	case 0xab:
@@ -470,7 +470,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		IOF(tmp);
 		R16[HL]--;
 		if (REP && R8[B]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* outi/otir */
 	case 0xa3:
@@ -480,7 +480,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		IOF(tmp);
 		R16[HL]++;
 		if (REP && R8[B]) R16[PC] -= 2;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xcf) {
@@ -490,7 +490,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		R16[PC] = RD16(R16[SP]);
 		R16[SP] += 2;
 		z->iff1 = z->iff2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* reti */
 	case 0x4d:
@@ -498,7 +498,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		R16[PC] = RD16(R16[SP]);
 		R16[SP] += 2;
 		z->iff1 = z->iff2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sbc hl,Q */
 	case 0x42:
@@ -506,7 +506,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		R8[L] = ADD_SUB_C((uint8_t)R8[L], (Q24 & 0xff) + GF(CF), 1);
 		R8[H] = ADD_SUB_C((uint8_t)R8[H], (Q24 >> 8) + GF(CF), 1);
 		SF(ZF, R16[HL] == 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* adc hl,Q */
 	case 0x4a:
@@ -514,7 +514,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		R8[L] = ADD_SUB_C((uint8_t)R8[L], (Q24 & 0xff) + GF(CF), 0);
 		R8[H] = ADD_SUB_C((uint8_t)R8[H], (Q24 >> 8) + GF(CF), 0);
 		SF(ZF, R16[HL] == 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (A),Q */
 	case 0x43:
@@ -522,7 +522,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		FETCH16(tmp)
 		DIS("ld (0x%04x), %s", tmp, QN[q24])
 		WR16(tmp, Q24)
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld Q,(A) */
 	case 0x4b:
@@ -530,7 +530,7 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		FETCH16(tmp)
 		DIS("ld %s, (0x%04x)", QN[q24], tmp)
 		Q24 = RD16(tmp);
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xc7) {
@@ -539,26 +539,26 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 		DIS("neg")
 		R8[A] = ADD_SUB_C(0, (uint8_t)R8[A], 1);
 		SF(PF, (uint8_t)R8[A] == 0x80);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* in R,(c) */
 	case 0x40:
 		DIS("in %s, (c)", RN[v33])
 		SR(v33, F(z->in(z, R8[C]), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* out (c),R */
 	case 0x41:
 		DIS("out (c), %s", RN[v33])
 		z->out(z, R8[C], GR(v33));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	/* im 0 */
 	if ((op & 0xd7) == 0x46) {
 		DIS("im 0")
 		z->im = 0;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xdf) {
@@ -566,20 +566,20 @@ do_ed (struct z80 *z, enum z80_flags flags, int column)
 	case 0x56:
 		DIS("im 1")
 		z->im = 1;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* im 2 */
 	case 0x5e:
 		DIS("im 2")
 		z->im = 2;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
-static int
+static enum z80_result
 do_cb (struct z80 *z, enum z80_flags flags, int column)
 {
 	uint8_t op;
@@ -591,19 +591,19 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	case 0x40:
 		DIS("bit %d, %s", b33, RN[v30])
 		F(GR(v30) & B3, 1);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* res B,R */
 	case 0x80:
 		DIS("res %d, %s", b33, RN[v30])
 		SR(v30, GR(v30) & ~(B3));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* set B,R */
 	case 0xc0:
 		DIS("set %d, %s", b33, RN[v30])
 		SR(v30, GR(v30) | B3);
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xf8) {
@@ -611,61 +611,61 @@ do_cb (struct z80 *z, enum z80_flags flags, int column)
 	case 0x00:
 		DIS("rlc %s", RN[v30])
 		SR(v30, F_C((GR(v30) << 1) + BR(v30, 7), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rrc R */
 	case 0x08:
 		DIS("rrc %s", RN[v30])
 		SF(CF, BR(v30, 0));
 		SR(v30, F(((uint8_t)GR(v30) >> 1) + (GF(CF) << 7), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rl R */
 	case 0x10:
 		DIS("rl %s", RN[v30])
 		SR(v30, F_C((GR(v30) << 1) + GF(CF), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rr R */
 	case 0x18:
 		DIS("rr %s", RN[v30])
 		SR(v30, F_C(((uint8_t)GR(v30) + (GF(CF) << 8) + (BR(v30, 0) << 9)) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sla R */
 	case 0x20:
 		DIS("sla %s", RN[v30])
 		SF(CF, BR(v30, 7));
 		SR(v30, F(GR(v30) << 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sra R */
 	case 0x28:
 		DIS("sra %s", RN[v30])
 		SF(CF, BR(v30, 0));
 		SR(v30, F((int8_t)GR(v30) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sll R */
 	case 0x30:
 		DIS("sll %s", RN[v30])
 		SF(CF, BR(v30, 7));
 		SR(v30, F((GR(v30) << 1) + 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* srl R */
 	case 0x38:
 		DIS("srl %s", RN[v30])
 		SF(CF, BR(v30, 0));
 		SR(v30, F((uint8_t)GR(v30) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
-static int
+static enum z80_result
 do_fd (struct z80 *z, enum z80_flags flags, int column)
 {
 	uint8_t op;
@@ -677,20 +677,20 @@ do_fd (struct z80 *z, enum z80_flags flags, int column)
 	case 0x65:
 		DIS("ld iyh, iyl")
 		R8[IYH] = R8[IYL];
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld iyl,iyh */
 	case 0x6c:
 		DIS("ld iyl, iyh")
 		R8[IYL] = R8[IYH];
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
-static int
+static enum z80_result
 do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 {
 	uint8_t op;
@@ -704,13 +704,13 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x86:
 		DIS("res %d, (%s+%d)", b33, IN[i5], d8)
 		WR8(IPD, RD8(IPD) & ~(B3));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* set B,(I+D) */
 	case 0xc6:
 		DIS("set %d, (%s+%d)", b33, IN[i5], d8)
 		WR8(IPD, RD8(IPD) | B3);
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xc0) {
@@ -719,19 +719,19 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		DIS("bit %d, (%s+%d)", b33, IN[i5], d8)
 		F(RD8(IPD) & B3, 1);
 		YX(RD8(IPD + 1));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* res B,(I+D)->R */
 	case 0x80:
 		DIS("res %d, (%s+%d->%s)", b33, IN[i5], d8, RN[v30])
 		WR8(IPD, SR(v30, RD8(IPD) & ~(B3)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* set B,(I+D)->R */
 	case 0xc0:
 		DIS("set %d, (%s+%d->%s)", b33, IN[i5], d8, RN[v30])
 		WR8(IPD, SR(v30, RD8(IPD) | B3));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op) {
@@ -739,54 +739,54 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x16:
 		DIS("rl (%s+%d)", IN[i5], d8)
 		WR8(IPD, F_C((RD8(IPD) << 1) + GF(CF), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rlc (I+D) */
 	case 0x06:
 		DIS("rlc (%s+%d)", IN[i5], d8)
 		WR8(IPD, F_C((RD8(IPD) << 1) + BIT(RD8(IPD), 7), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rr (I+D) */
 	case 0x1e:
 		DIS("rr (%s+%d)", IN[i5], d8)
 		WR8(IPD, F_C((RD8(IPD) + (GF(CF) << 8) + (BIT(RD8(IPD), 0) << 9)) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rrc (I+D) */
 	case 0x0e:
 		DIS("rrc (%s+%d)", IN[i5], d8)
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, F((RD8(IPD) >> 1) + (GF(CF) << 7), 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sla (I+D) */
 	case 0x26:
 		DIS("sla (%s+%d)", IN[i5], d8)
 		SF(CF, BIT(RD8(IPD), 7));
 		WR8(IPD, F(RD8(IPD) << 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sra (I+D) */
 	case 0x2e:
 		DIS("sra (%s+%d)", IN[i5], d8)
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, F((int8_t)RD8(IPD) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sll (I+D) */
 	case 0x36:
 		DIS("sll (%s+%d)", IN[i5], d8)
 		SF(CF, BIT(RD8(IPD), 7));
 		WR8(IPD, F((RD8(IPD) << 1) + 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* srl (I+D) */
 	case 0x3e:
 		DIS("srl (%s+%d)", IN[i5], d8)
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, F(RD8(IPD) >> 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xf8) {
@@ -794,61 +794,61 @@ do_idd_cb (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x10:
 		DIS("rl (%s+%d->%s)", IN[i5], d8, RN[v30])
 		WR8(IPD, SR(v30, F_C((RD8(IPD) << 1) + GF(CF), 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rlc (I+D)->R */
 	case 0x00:
 		DIS("rlc (%s+%d->%s)", IN[i5], d8, RN[v30])
 		WR8(IPD, SR(v30, F_C((RD8(IPD) << 1) + BIT(RD8(IPD), 7), 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rr (I+D)->R */
 	case 0x18:
 		DIS("rr (%s+%d->%s)", IN[i5], d8, RN[v30])
 		WR8(IPD, SR(v30, F_C((RD8(IPD) + (GF(CF) << 8) + (BIT(RD8(IPD), 0) << 9)) >> 1, 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rrc (I+D)->R */
 	case 0x08:
 		DIS("rrc (%s+%d->%s)", IN[i5], d8, RN[v30])
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, SR(v30, F((RD8(IPD) >> 1) + (GF(CF) << 7), 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sla (I+D)->R */
 	case 0x20:
 		DIS("sla (%s+%d->%s)", IN[i5], d8, RN[v30])
 		SF(CF, BIT(RD8(IPD), 7));
 		WR8(IPD, SR(v30, F(RD8(IPD) << 1, 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sra (I+D)->R */
 	case 0x28:
 		DIS("sra (%s+%d->%s)", IN[i5], d8, RN[v30])
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, SR(v30, F((int8_t)RD8(IPD) >> 1, 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* sll (I+D)->R */
 	case 0x30:
 		DIS("sll (%s+%d->%s)", IN[i5], d8, RN[v30])
 		SF(CF, BIT(RD8(IPD), 7));
 		WR8(IPD, SR(v30, F((RD8(IPD) << 1) + 1, 0)));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* srl (I+D)->R */
 	case 0x38:
 		DIS("srl (%s+%d->%s)", IN[i5], d8, RN[v30])
 		SF(CF, BIT(RD8(IPD), 0));
 		WR8(IPD, SR(v30, F(RD8(IPD) >> 1, 0)));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
-static int
+static enum z80_result
 do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 {
 	uint8_t op, n8;
@@ -863,47 +863,47 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		FETCH16(tmp)
 		DIS("ld %s, 0x%04x", IN[i5], tmp)
 		I5 = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (A),I */
 	case 0x22:
 		FETCH16(tmp)
 		DIS("ld (0x%04x), %s", tmp, IN[i5])
 		WR16(tmp, I5);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* inc I */
 	case 0x23:
 		DIS("inc %s", IN[i5])
 		I5 += 1;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld I,(A) */
 	case 0x2a:
 		FETCH16(tmp)
 		DIS("ld %s, (0x%04x)", IN[i5], tmp)
 		I5 = RD16(tmp);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* dec I */
 	case 0x2b:
 		DIS("dec %s", IN[i5])
 		I5 -= 1;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* inc (I+D) */
 	case 0x34:
 		FETCH(d8)
 		DIS("inc (%s+%d)", IN[i5], d8)
 		WR8(IPD, ADD_SUB(RD8(IPD), 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* dec (I+D) */
 	case 0x35:
 		FETCH(d8)
 		DIS("dec (%s+%d)", IN[i5], d8)
 		WR8(IPD, ADD_SUB(RD8(IPD), 1, 1));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (I+D),N */
 	case 0x36:
@@ -911,14 +911,14 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		FETCH(n8)
 		DIS("ld (%s+%d), 0x%02x", IN[i5], d8, n8)
 		WR8(IPD, n8);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* pop I */
 	case 0xe1:
 		DIS("pop %s", IN[i5])
 		I5 = RD16(R16[SP]);
 		R16[SP] += 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ex (sp),I */
 	case 0xe3:
@@ -926,26 +926,26 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		tmp = RD16(R16[SP]);
 		WR16(R16[SP], I5)
 		I5 = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* push I */
 	case 0xe5:
 		DIS("push %s", IN[i5])
 		R16[SP] -= 2;
 		WR16(R16[SP], I5)
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jp (I) */
 	case 0xe9:
 		DIS("jp (%s)", IN[i5])
 		R16[PC] = I5;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld sp,I */
 	case 0xf9:
 		DIS("ld sp, %s", IN[i5])
 		R16[SP] = I5;
-		return 0;
+		return Z80_OP_GOOD;
 	case 0xcb:
 		/* Extended */
 		return do_idd_cb (z, flags, column, op0);
@@ -957,7 +957,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		FETCH(d8)
 		DIS("ld %s, (%s+%d)", RN[v33], IN[i5], d8)
 		SR(v33, RD8(IPD));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* <al> a,(I+D) */
 	case 0x86:
@@ -971,7 +971,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		FETCH(d8)
 		DIS("ld (%s+%d), %s", IN[i5], d8, RN[v30])
 		WR8(IPD, GR(v30));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xf7) {
@@ -979,13 +979,13 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x24:
 		DIS("inc %s", JN[i5b3])
 		I5B3 = ADD_SUB(I5B3, 1, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* dec J */
 	case 0x25:
 		DIS("dec %s", JN[i5b3])
 		I5B3 = ADD_SUB(I5B3, 1, 1);
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	/* add I,Q */
@@ -995,14 +995,14 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		YX_C(tmp >> 8);
 		SF(HF, !!((I5 & 0xf00) > (tmp & 0xf00)));
 		I5 = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	/* ld J,R */
 	if ((op & 0xf0) == 0x60) {
 		DIS("ld %s, %s", JN[i5b3], RN[v30])
 		I5B3 = GR(v30);
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xc6) {
@@ -1010,7 +1010,7 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 	case 0x44:
 		DIS("ld %s, %s", RN[v33], JN[i5b0])
 		SR(v33, I5B0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* <al> a,J */
 	case 0x84:
@@ -1024,21 +1024,21 @@ do_idd (struct z80 *z, enum z80_flags flags, int column, uint8_t op0)
 		case 0x65:
 			DIS("ld ixh, ixl")
 			R8[IXH] = R8[IXL];
-			return 0;
+			return Z80_OP_GOOD;
 
 		/* ld ixl,ixh */
 		case 0x6c:
 			DIS("ld ixl, ixh")
 			R8[IXL] = R8[IXH];
-			return 0;
+			return Z80_OP_GOOD;
 		}
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
-int
+enum z80_result
 z80_insn (struct z80 *z, enum z80_flags flags)
 {
 	int column = 0;
@@ -1059,44 +1059,44 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	case 0x00:
 		DIS("nop")
 		/* nothing */;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (bc),a */
 	case 0x02:
 		DIS("ld (bc), a")
 		WR8(R16[BC], R8[A]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld a,(bc) */
 	case 0x0a:
 		DIS("ld a, (bc)")
 		R8[A] = RD8(R16[BC]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (de),a */
 	case 0x12:
 		DIS("ld (de), a")
 		WR8(R16[DE], R8[A]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld a,(de) */
 	case 0x1a:
 		DIS("ld a, (de)")
 		R8[A] = RD8(R16[DE]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* halt */
 	case 0x76:
 		DIS("halt")
 		/* wait for interrupt */;
-		return 2;
+		return Z80_OP_HALT;
 
 	/* ret */
 	case 0xc9:
 		DIS("ret")
 		R16[PC] = RD16(R16[SP]);
 		R16[SP] += 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* exx */
 	case 0xd9:
@@ -1104,7 +1104,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		XCHG(R16[BC], R16[BC_]);
 		XCHG(R16[DE], R16[DE_]);
 		XCHG(R16[HL], R16[HL_]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ex (sp),hl */
 	case 0xe3:
@@ -1112,129 +1112,129 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		tmp = RD16(R16[SP]);
 		WR16(R16[SP], R16[HL])
 		R16[HL] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jp (hl) */
 	case 0xe9:
 		DIS("jp (hl)")
 		R16[PC] = R16[HL];
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ex de,hl */
 	case 0xeb:
 		DIS("ex de, hl")
 		XCHG(R16[DE], R16[HL]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* di */
 	case 0xf3:
 		DIS("di")
 		z->iff1 = 0;
 		z->iff2 = 0;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld sp,hl */
 	case 0xf9:
 		DIS("ld sp, hl")
 		R16[SP] = R16[HL];
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ei */
 	case 0xfb:
 		DIS("ei")
 		z->iff2 = 1; /* FIXME: after the next instruction */
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* djnz E */
 	case 0x10:
 		FETCH(d8)
 		DIS("djnz %d", d8)
 		if (R8[B] -= 1) R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jr E */
 	case 0x18:
 		FETCH(d8)
 		DIS("jr %d", d8)
 		R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jr nz,E */
 	case 0x20:
 		FETCH(d8)
 		DIS("jr nz, %d", d8)
 		if (!GF(ZF)) R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jr z,E */
 	case 0x28:
 		FETCH(d8)
 		DIS("jr z, %d", d8)
 		if (GF(ZF)) R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jr nc,E */
 	case 0x30:
 		FETCH(d8)
 		DIS("jr nc, %d", d8)
 		if (!GF(CF)) R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jr c,E */
 	case 0x38:
 		FETCH(d8)
 		DIS("jr c, %d", d8)
 		if (GF(CF)) R16[PC] += d8;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* out (N),a */
 	case 0xd3:
 		FETCH(n8)
 		DIS("out (0x%02x), a", n8)
 		z->out(z, n8, R8[A]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* in a,(N) */
 	case 0xdb:
 		FETCH(n8)
 		DIS("in a, (0x%02x)", n8)
 		R8[A] = z->in(z, n8);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (A),hl */
 	case 0x22:
 		FETCH16(tmp)
 		DIS("ld (0x%04x), hl", tmp)
 		WR16(tmp, R16[HL]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld hl,(A) */
 	case 0x2a:
 		FETCH16(tmp)
 		DIS("ld hl, (0x%04x)", tmp)
 		R16[HL] = RD16(tmp);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld (A),a */
 	case 0x32:
 		FETCH16(tmp)
 		DIS("ld (0x%04x), a", tmp)
 		WR8(tmp, R8[A]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ld a,(A) */
 	case 0x3a:
 		FETCH16(tmp)
 		DIS("ld a, (0x%04x)", tmp)
 		R8[A] = RD8(tmp);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jp A */
 	case 0xc3:
 		FETCH16(tmp)
 		DIS("jp 0x%04x", tmp)
 		R16[PC] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* call A */
 	case 0xcd:
@@ -1243,41 +1243,41 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		R16[SP] -= 2;
 		WR16(R16[SP], R16[PC])
 		R16[PC] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ex af,af' */
 	case 0x08:
 		DIS("ex af, af'")
 		XCHG(R16[AF], R16[AF_]);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rlca */
 	case 0x07:
 		DIS("rlca")
 		R8[A] = YX_C((R8[A] << 1) + BIT(R8[A], 7));
 		SF(HF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rra */
 	case 0x1f:
 		DIS("rra")
 		R8[A] = YX_C(((BIT(R8[A], 0) << 9) + (GF(CF) << 8) + (uint8_t)R8[A]) >> 1);
 		SF(HF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rrca */
 	case 0x0f:
 		DIS("rrca")
 		R8[A] = YX_C(((BIT(R8[A], 0) << 9) + (BIT(R8[A], 0) << 8) + (uint8_t)R8[A]) >> 1);
 		SF(HF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rla */
 	case 0x17:
 		DIS("rla")
 		R8[A] = YX_C((R8[A] << 1) + GF(CF));
 		SF(HF, 0);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* daa */
 	case 0x27:
@@ -1292,7 +1292,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		if ((uint8_t)R8[A] > 0x99)
 			SF(CF, 1);
 		R8[A] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* cpl */
 	case 0x2f:
@@ -1300,7 +1300,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		R8[A] = YX(~(R8[A]));
 		SF(HF, 1);
 		SF(NF, 1);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* scf */
 	case 0x37:
@@ -1309,7 +1309,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		SF(HF, 0);
 		SF(NF, 0);
 		SF(CF, 1);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ccf */
 	case 0x3f:
@@ -1318,7 +1318,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		SF(HF, GF(CF));
 		SF(NF, 0);
 		SF(CF, !GF(CF));
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	/* Extended instructions. */
@@ -1339,7 +1339,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	case 0x03:
 		DIS("inc %s", QN[q24])
 		Q24 += 1;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* add hl,Q */
 	case 0x09:
@@ -1348,13 +1348,13 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		YX_C(tmp >> 8);
 		SF(HF, !!((R16[HL] & 0xf00) > (tmp & 0xf00)));
 		R16[HL] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* dec Q */
 	case 0x0b:
 		DIS("dec %s", QN[q24])
 		Q24 -= 1;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xc7) {
@@ -1362,13 +1362,13 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	case 0x04:
 		DIS("inc %s", RN[v33])
 		SR(v33, ADD_SUB(GR(v33), 1, 0));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* dec R */
 	case 0x05:
 		DIS("dec %s", RN[v33])
 		SR(v33, ADD_SUB(GR(v33), 1, 1));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* <al> a,N */
 	case 0xc6:
@@ -1382,7 +1382,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 	case 0x40:
 		DIS("ld %s, %s", RN[v33], RN[v30])
 		SR(v33, GR(v30));
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* <al> a,R */
 	case 0x80:
@@ -1396,14 +1396,14 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		DIS("pop %s", PN[p24])
 		P24 = RD16(R16[SP]);
 		R16[SP] += 2;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* push P */
 	case 0xc5:
 		DIS("push %s", PN[p24])
 		R16[SP] -= 2;
 		WR16(R16[SP], P24)
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	switch (op & 0xc7) {
@@ -1412,14 +1412,14 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		FETCH(n8)
 		DIS("ld %s, 0x%02x", RN[v33], n8)
 		SR(v33, n8);
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* jp C,A */
 	case 0xc2:
 		FETCH16(tmp)
 		DIS("jp %s, 0x%04x", CN[v33], tmp)
 		if (COND) R16[PC] = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* call C,A */
 	case 0xc4:
@@ -1430,7 +1430,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 			WR16(R16[SP], R16[PC])
 			R16[PC] = tmp;
 		}
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* ret C */
 	case 0xc0:
@@ -1439,7 +1439,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 			R16[PC] = RD16(R16[SP]);
 			R16[SP] += 2;
 		}
-		return 0;
+		return Z80_OP_GOOD;
 
 	/* rst S */
 	case 0xc7:
@@ -1447,7 +1447,7 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		R16[SP] -= 2;
 		WR16(R16[SP], R16[PC])
 		R16[PC] = S;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	/* ld Q,A */
@@ -1455,11 +1455,11 @@ z80_insn (struct z80 *z, enum z80_flags flags)
 		FETCH16(tmp)
 		DIS("ld %s, 0x%04x", QN[q24], tmp)
 		Q24 = tmp;
-		return 0;
+		return Z80_OP_GOOD;
 	}
 
 	DIS("(bad op)");
-	return -1;
+	return Z80_OP_BAD;
 }
 
 void

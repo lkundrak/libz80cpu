@@ -301,7 +301,7 @@ main (int argc, char *argv[])
 	}
 
 	while (!stopsim) {
-		if (z80_insn (&z, flags))
+		if (z80_insn (&z, flags) != Z80_OP_GOOD)
 			stopsim = 1;
 	}
 

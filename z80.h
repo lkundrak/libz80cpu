@@ -32,6 +32,12 @@ enum z80_flags {
 #endif
 };
 
+enum z80_result {
+	Z80_OP_BAD	= -1,
+	Z80_OP_GOOD	= 0,
+	Z80_OP_HALT	= 1,
+};
+
 enum z80_reg16 {
 	AF, BC, DE, HL,
 	AF_, BC_, DE_, HL_,
@@ -76,7 +82,7 @@ struct z80 {
 	void (*out)(struct z80 *z, uint8_t addr, uint8_t val);
 };
 
-int z80_insn (struct z80 *z, enum z80_flags flags);
+enum z80_result z80_insn (struct z80 *z, enum z80_flags flags);
 void z80_nmi (struct z80 *z);
 
 #ifndef Z80_NO_PRINT

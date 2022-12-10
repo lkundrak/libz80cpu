@@ -77,7 +77,7 @@ main (int argc, char *argv[])
 	flags |= Z80_PRINT_DATA;
 	flags |= Z80_PRINT_INSN;
 	while (z.r16[PC] < end) {
-		if (z80_insn (&z, flags))
+		if (z80_insn (&z, flags) != Z80_OP_GOOD)
 			return 1;
 	}
 
