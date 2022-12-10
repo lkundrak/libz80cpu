@@ -42,6 +42,10 @@ static int debug_z80 = 0;
 #define A586_CTC0_BASE	0x20
 #define A586_SIO0_BASE	0x2c
 
+/* For ZX Spectrum test suite compatibility. */
+#define ZX_TEST		0xfe
+#define ZX_DEBUG	0xff
+
 _Static_assert(A586_ROM_BOTTOM < ROM_BOTTOM);
 
 static void
@@ -76,6 +80,38 @@ out (struct z80 *z, uint8_t addr, uint8_t val)
 	case UART_BASE + 3:
 	case A586_SIO0_BASE + 1:
 		/* Serial control. Just ignore. */
+		stopsim = 0;
+		break;
+	case ZX_DEBUG:
+		stopsim = 0;
+		switch (val) {
+		case 32 ... 122:
+			putchar (val);
+			break;
+		case 19:
+		case 13:
+			puts ("\033[39m");
+			break;
+		case 1:
+			printf ("\033[28G");
+			break;
+		case 25:
+			printf ("\033[33m");
+			break;
+		case 26:
+			printf ("\033[31m");
+			break;
+		case 30:
+			printf ("\033[32m");
+			break;
+		case 23:
+		case 127:
+			break;
+		default:
+			printf("[%d]", val);
+		}
+		break;
+	case ZX_TEST:
 		stopsim = 0;
 		break;
 	}
@@ -123,6 +159,10 @@ in (struct z80 *z, uint8_t addr)
 			 * unless there's other i/o in between */
 			dintm = -1;
 		}
+		break;
+	case ZX_TEST:
+		val = 0xbf;
+		stopsim = 0;
 		break;
 	}
 
@@ -199,6 +239,7 @@ enum load_type {
 	LOAD_GUESS = 0,
 	LOAD_RAW,
 	LOAD_CPM,
+	LOAD_ZX,
 };
 
 int
@@ -224,6 +265,8 @@ main (int argc, char *argv[])
 			type = LOAD_RAW;
 		} else if (strcmp (argv[1], "--cpm") == 0) {
 			type = LOAD_CPM;
+		} else if (strcmp (argv[1], "--zx") == 0) {
+			type = LOAD_ZX;
 		} else {
 			fprintf (stderr, "Bad argument: '%s'\n", argv[1]);
 			return 1;
@@ -236,6 +279,8 @@ main (int argc, char *argv[])
 	if (type == LOAD_GUESS) {
 		if (endswith (argv[1], ".com")) {
 			type = LOAD_CPM;
+		} else if (endswith (argv[1], ".out")) {
+			type = LOAD_ZX;
 		} else {
 			type = LOAD_RAW;
 		}
@@ -293,6 +338,25 @@ main (int argc, char *argv[])
 		mem[0x0021] = 0xed; /*		out (c),a 		*/
 		mem[0x0022] = 0x79;
 		mem[0x0023] = 0xc9; /*		ret 			*/
+		break;
+
+	case LOAD_ZX:
+		z.r16[PC] = 0x8000;
+
+		z.r16[SP] = 0xfffe;	/* Halt on return.		*/
+		mem[z.r16[SP]] = 0x00;
+		mem[z.r16[SP] -1] = 0x00;
+		mem[0x0000] = 0x76; /* halt */
+
+		/* CHAN-OPEN */
+		mem[0x1601] = 0xc9; /* ret */
+
+		/* rst 10 */
+		mem[0x0010] = 0x0e; /*		ld c,ZX_DEBUG 	*/
+		mem[0x0011] = ZX_DEBUG;
+		mem[0x0012] = 0xed; /* do:	out (c),a 		*/
+		mem[0x0013] = 0x79;
+		mem[0x0014] = 0xc9; /* ret */
 		break;
 
 	default:

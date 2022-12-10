@@ -6,7 +6,7 @@ runz80 - Run program for the Z80 processor
 
 =over 4
 
-=item B<runz80> [B<--raw>|B<--cpm>] [<I<program.bin>>]
+=item B<runz80> [B<--raw>|B<--cpm>|B<--zx>] [<I<program.bin>>]
 
 =back
 
@@ -14,10 +14,11 @@ runz80 - Run program for the Z80 processor
 
 B<runz80> is a very rudimentary Z80 system emulator. It serves as an
 example and testbed for I<libz80>. Its capabilities are limited to loading
-raw or CP/M com programs, serial I/O, terminating itself and leaving an
-execution trace log.
-
+serial I/O, terminating itself and leaving an execution trace log.
 UART is emulated to provide basic serial I/O.
+
+Minimal support is provided for CP/M or ZX Spectrum programs in order to
+provide serial I/O using standard ROM calls.
 
 Emulation stops upon encountering a I<halt> instruction or error.
 
@@ -41,10 +42,19 @@ program at 0x0100.
 The minimal BIOS implements system calls 2 and 9. It's just enough to be
 able to run YAZE test programs.
 
+=item B<--zx>
+
+Treat the image as a binary intended to run on ZX Spectrum. The program is
+loaded at 0x8000, stack initialized in a way that a I<ret> terminates the
+program and I<rst 10> provides formatted console output. Nothing more.
+
+This is just good enough to run z80test.
+
 =back
 
-Without any option, the program type is guessed. Files ending with I<.com>
-are assumed to be CP/M program while everything else is treated as raw.
+Without any option, the program type is guessed. Files whose names end
+with I<.com> or I<.out> are assumed to be CP/M or XZ spectrum programs
+respectively. Everything else is treated as raw.
 
 =head1 MEMORY MAP
 
@@ -64,6 +74,10 @@ COM programs have a BDOS system call handler for console I/O here.
 =item 0x0100
 
 COM programs are loaded here.
+
+=item 0x8000
+
+ZX Spectrum programs are loaded here.
 
 =item 0xf000
 
@@ -94,7 +108,6 @@ DART serial port.
 Good for I<Z80SerialMonitor> built with I<CONSTANTS-F000-E0.asm> configuration.
 
 =back
-
 
 =head1 BUGS
 
@@ -146,6 +159,10 @@ A lovely Z80 serial monitor that works with this emulator.
 
 Another Z80 emulator. Faster, nicer, actually correct. Contains a test suite
 that can be run with this emulator.
+
+=item L<https://github.com/raxoft/z80test>
+
+A nice set of tests, intended to run on ZX Spectrum.
 
 =back
 

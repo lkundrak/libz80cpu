@@ -20,7 +20,7 @@ disz80: z80-print.o
 
 %.1: %.pod
 	pod2man --center 'Development Tools' \
-		--section 1 --date 2022-11-23 --release 1 $< >$@
+		--section 1 --date 2022-12-11 --release 2 $< >$@
 
 %.pdf: %.1
 	groff -Tpdf -mman $< >$@
