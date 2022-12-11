@@ -1,4 +1,4 @@
-=head1 libz80 -- A Z80 disassembler and emulator
+=head1 libz80cpu -- A Z80 disassembler and emulator
 
 This is a Z80 disassembler, emulator that can also be used as a library.
 

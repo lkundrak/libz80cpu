@@ -15,7 +15,7 @@ disz80 - Disassemble programs for the Z80 processor
 B<disz80> translates the binary dumps of Z80 programs into a
 pretty textural format. Yeah, pretty.
 
-It serves as an example of how to use I<libz80>. As such, it
+It serves as an example of how to use I<libz80cpu>. As such, it
 aims to be simple and therefore doesn't do anything particularly
 clever (such as generating symbolic labels for jump targets)
 nor does it provide any means to configure and customize the
@@ -42,6 +42,6 @@ Free Software Foundation, either version 2 of the License, or (at your
 option) any later version.
 
 The source code repository can be obtained from
-L<https://github.com/lkundrak/libz80>. Bug fixes and feature
-ehancements licensed under same conditions as libz80 are welcome
+L<https://github.com/lkundrak/libz80cpu>. Bug fixes and feature
+ehancements licensed under same conditions as libz80cpu are welcome
 via GIT pull requests.
